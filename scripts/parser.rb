@@ -1,58 +1,44 @@
-require_relative 'defaults'
+require 'yaml'
 
 module Parser
-  include Defaults
-
-  VARS_H = {}
-  VARS_LOADED = false
+  DEFAULTS = YAML.load(File.read('defaults.yaml'))
+  VARS = DEFAULTS['vars']
+  CONFIG_DIR = File.join(ENV['HOME'], '.config', 'i3')
 
   def expand_vars(s)
-    if !VARS_LOADED
-      for i in (0...VARS.length).step(2).to_a do
-        k, v = VARS[i], VARS[i+1]
-        reg = Regexp.compile("$#{v}")
-        v = v =~ reg ? (VARS_H[k] || '')  : v.sub(reg, VARS_H[k] || '') 
-        VARS_H[k] = v
+    s = s.to_s
+    vars = s.scan(/[$]`?[^` ]+`?/).flatten
+    vars.each {|var| 
+      if var[1] == '`'
+        s = s.gsub(var, eval(var[2...var.length-1]))
+      else
+        s = s.gsub(var, VARS[var[1...var.length]] || '')
       end
-    end
-
-    if s.is_a? Symbol 
-      VARS_H[s] || ''
-    else
-      s = s.to_s
-      vars = s.scan(/([$][a-zA-Z0-9_!]+)/).flatten
-      vars.each {|var| 
-        s = s.gsub(var, VARS_H[var.sub('$', '').to_sym] || '')
-      }
-      s
-    end
+    }
+    s
   end
 
   def check_color(c)
     c !~ /^#?[0-9a-fA-F]{6}/ and raise "Invalid hex: #{c}"
   end
 
-  def parse(conf, s:[], d:0, tr: false, default: false)
-    tr = tr || {}
-    default = default || {}
-    conf = default.merge conf
+  def parse(conf, s:[], d:0, default: {})
     spaces = d > 0 ? '    ' * d : ''
 
-    conf.each { |k,v| 
-      _k = k
-      k = tr.has_key?(k) ? tr[k] : k
-      default_v = default[k] || []
+    default.merge(conf).each { |k,v| 
+      default_v = default[k]
+      v = conf[k] || default_v
 
       if block_given?
         k, v = yield [k, v]
       end
 
-      if k.is_a? Hash
-        s.push "#{spaces}#{_k} {\n"
-        parse(v, s: s, d:d+1, tr: k)
+      if v.is_a? Hash
+        s.push "#{spaces}#{k} {"
+        parse(v, s: s, d:d+1, default: v)
         s.push "#{spaces}}"
       else
-        k = k.to_s
+        # Special case for checking number arrays
         if v.is_a? Array
           v = v + (default_v.slice(v.length, default_v.length) || [])
           v = v.map {|c| 
@@ -71,37 +57,52 @@ module Parser
     s
   end
 
-  def parse_options(opts={})
-    parse(opts, default: OPTIONS).join "\n"
+  def parse_options(opts)
+    parse(opts, default: DEFAULTS['options']).join "\n"
   end
 
-  def parse_exec(cmds=[])
-    (EXEC + cmds).map {|c| expand_vars c}.join "\n"
+  def parse_autostart(cmds)
+    (DEFAULTS['autostart'] + cmds).map {|c| 'exec --no-startup-id ' + expand_vars(c)}.join "\n"
   end
 
-  def parse_i3bar(conf={})
-    s = parse(conf, tr: I3BAR_TR, d:1, default: I3BAR_DEFAULTS)
+  def parse_bar(conf)
+    s = parse(conf, d:1, default: DEFAULTS['bar'])
     s[0] = "bar {\n#{s[0]}"
     s.push "\n}"
     s.join "\n"
   end
 
-  def parse_window_colors(conf={})
-    parse(conf, tr: WINDOW_TR, default: WINDOW_DEFAULTS)
+  def parse_colors(conf)
+    parse(conf, default: DEFAULTS['colors'])
   end
 
-  def parse_keybindings(conf={}, default: KBD)
+  def parse_keybindings(conf)
     # M = Super
     # C = Control
     # S = Shift
     # A = Alt/Meta
     # spec: {Modifier}:{keys}
     s = []
-    conf.merge(KBD).each do |keys, cmd|
+
+    DEFAULTS['keybindings'].merge(conf).each do |keys, cmd|
       keys = keys.strip
       mod = ''
       ks = ''
-      no_mod = false
+      no_mod = keys !~ /:/ 
+      keybinding = []
+      default_cmd = cmd
+      cmd = conf[keys] || default_cmd
+      tr = {
+        'M' => 'Mod4',
+        'C' => 'Control',
+        'S' => 'Shift',
+        'A' => 'Alt',
+      }
+
+      if keys[0] == '!'
+        keys = keys.sub '!', ''
+        cmd = "exec --no-startup-id #{cmd}"
+      end
 
       if keys =~ /^XF86/ 
         no_mod = true
@@ -112,76 +113,54 @@ module Parser
 
       !no_mod and mod.length == 0 or !ks or ks.length == 0 and raise 'Key specification is wrong. spec: [MCSA]+:[:ascii:]+'
 
-      tr = {
-        'M' => 'Mod4',
-        'C' => 'Control',
-        'S' => 'Shift',
-        'A' => 'Alt',
-      }
-      keybinding = []
-      mod.split(//).each {|c| 
+      mod.split('').each {|c| 
         !tr.has_key?(c) and raise "Invalid modifier provided in #{keys}" 
         keybinding.push(tr[c])
       }
 
-      if cmd.is_a? Array
-        interpreter, path = cmd
-        interpreter = expand_vars interpreter
-        path = expand_vars path
-        !File.exist?(path) and raise "Invalid path provided: #{path}"
-        cmd = "#{interpreter} #{path}"
-      else
-        cmd = expand_vars cmd
-      end
-
+      cmd = expand_vars cmd
       keybinding = !no_mod ? keybinding.join('+') + '+' : ''
-      s.push(keybinding + "#{ks} exec --no-startup-id #{cmd}")  
+      s.push("bindsym " + keybinding + "#{ks} #{cmd}")  
     end
 
     s.join "\n"
   end
 
-  def parse_binding_modes(conf={})
+  # No defaults exist for this yet
+  def parse_modes(conf)
     binding_modes = []
     desc = {}
-    conf = MODES.merge conf
-    conf.each {|k,v| 
-      desc[k] = conf[k][:desc] if conf[k][:desc]
-      conf.delete :desc
-    }
 
-    conf.each do |mode, cmd|
+    DEFAULTS['modes'].merge(conf).each do |mode, cmd|
       str = [false]
-      mode_s = []
+      mode_s = desc[mode] || []
       s = []
-      desc_given = desc[mode]
-
-      if desc_given
-        mode_s = cmd[:desc]
-      end
-
       default = [%Q(    bindsym Escape mode "default"), %Q(    bindsym Return mode "default")]
 
-      if !desc_given
+      if mode_s.is_a? Array
         cmd.each { |k,app|
-          mode_s.push app.sub(Regexp.compile("^(#{k})"), '[\1]')
+          mode_s.push app.sub(Regexp.compile("^(#{k.sub('!', '')})"), '[\1]')
         }
-        desc_given = true
-        str[0] = %Q(set $#{mode} #{mode_s.join ' '}\nmode "$#{mode}" {) 
+        str[0] = %Q(set $#{mode} #{mode.capitalize}: #{mode_s.join ' '}\nmode "$#{mode}" {) 
       else
         str[0] = %Q(set $#{mode} #{mode_s}\nmode "$#{mode}" {)
       end
 
       s = cmd.map {|k,app| 
-        app = expand_vars app
+        if !(k == :desc)
+          app = expand_vars app
 
-        if k[0] == '!'
-          app = 'exec --no-startup-id ' + expand_vars(app)
-          k = k.sub('!', '')
+          if k[0] == '!'
+            app = 'exec --no-startup-id ' + expand_vars(app)
+            k = k.sub('!', '')
+          end
+
+          "    bindsym #{k} #{app}"
+        else
+          ''
         end
-
-        "    bindsym #{k} #{app}"
       }
+      s = s.filter {|i| i.length != 0} 
       s = s + default
       str.push s.join "\n"
       str.push "}"
@@ -191,12 +170,30 @@ module Parser
     binding_modes.join "\n"
   end
 
-  def parse_includes(paths=[])
-    (paths + INCLUDE).map {|p| 
-      "include " + File.join(I3_CONFIG_DIR, 'i3', p + '.conf')
+  def parse_includes(paths)
+    (paths + DEFAULTS['includes']).map {|p| 
+      "include " + File.join(CONFIG_DIR, 'i3', p + '.conf')
     }.join "\n"
+  end
+ 
+  def parse_vars
+    parse({}, default: VARS) { |k, v|
+      "set $#{k} #{v}"
+    }
+  end
+
+  def save(includes: [], modes: {}, keybindings: {}, options: {}, colors: {}, bar: {}, autostart: [])
+    s = []
+    s.push parse_vars
+    s.push parse_keybindings(keybindings)
+    s.push parse_autostart(autostart)
+    s.push parse_options(options)
+    s.push parse_colors(colors)
+    s.push parse_bar(bar)
+    dest = File.join(CONFIG_DIR, 'config')
+    File.write(dest, s.join("\n"))
   end
 end
 
 include Parser
-puts parse_binding_modes
+save
