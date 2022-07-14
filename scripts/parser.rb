@@ -5,14 +5,24 @@ module Parser
   VARS = DEFAULTS['vars']
   CONFIG_DIR = File.join(ENV['HOME'], '.config', 'i3')
 
+  # #{ruby expression}
+  # ${variable}
+  # %{environment variable}
+  # !{sh command}
   def expand_vars(s)
     s = s.to_s
-    vars = s.scan(/[$]`?[^` ]+`?/).flatten
+    vars = s.scan(/[$#%!][{]?[^}]+}?/).flatten
     vars.each {|var| 
-      if var[1] == '`'
-        s = s.gsub(var, eval(var[2...var.length-1]))
-      else
-        s = s.gsub(var, VARS[var[1...var.length]] || '')
+      varname = var[2...var.length-1]
+
+      if var[0] == '#'
+        s = s.gsub(var, eval(varname) || '')
+      elsif var[0] == '!'
+        s = s.gsub(var, `#{varname}`)
+      elsif var[0] == '%'
+        s = s.gsub(var, ENV[varname] || '')
+      elsif var[0] == '$'
+        s = s.gsub(var, VARS[varname] || '')
       end
     }
     s
@@ -196,4 +206,4 @@ module Parser
 end
 
 include Parser
-save
+puts expand_vars("!{ls -l}")

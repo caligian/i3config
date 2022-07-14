@@ -25,7 +25,7 @@ bindsym Mod4+Control+k resize grow height 10 px or 10 ppt
 bindsym Mod4+Control+h resize shrink width 10 px or 10 ppt
 bindsym Mod4+Control+l resize grow width 10 px or 10 ppt
 bindsym Mod4+Shift+q kill
-bindsym Mod4+p exec --no-startup-id dmenu_run  -b -l 10 -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf '#002b36 '
+bindsym Mod4+p exec --no-startup-id dmenu_run   -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf '#002b36' -b -l 15
 bindsym Mod4+Shift+h move left
 bindsym Mod4+Shift+j move down
 bindsym Mod4+Shift+k move up
@@ -80,16 +80,17 @@ default_border pixel 4
 default_floating_border pixel 4
 hide_edge_borders smart
 floating_modifier Mod4
-font pango:Noto Sans 13
+font pango:Sans 13
 client.focused #002b36 #002b36 #b58900 #268bd2 #b58900
 client.focused_inactive #073642 #073642 #93a1a1 #073642 #073642
 client.unfocused #073642 #073642 #657b83 #073642 #073642
 client.urgent #d33682 #d33682 #002b36 #d33682 #d33682
 client.background #002b36
+
 bar {
+    status_command  i3status --config ~/.config/i3status/config
     position bottom
     output primary
-    font pango: Noto Mono 12
     separator_symbol 
     workspace_min_width 1
     colors {

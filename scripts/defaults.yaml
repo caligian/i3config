@@ -1,8 +1,9 @@
 ---
 bar:
+  status_command: i3status --config ~/.config/i3/status_config
   position: bottom
   output: primary
-  font: 'pango: Noto Mono 12'
+  font: 'pango:sans 12'
   separator_symbol: ""
   workspace_min_width: '1'
   colors:
@@ -65,17 +66,16 @@ keybindings:
   "!M:Return": xfce4-terminal
   "!MC:f": firefox
   "!MC:Return": nvim-qt
-  "!XF86AudioRaiseVolume": "$raise_volume"
-  "!XF86AudioLowerVolume": "$lower_volume"
-  "!XF86AudioMute": "$mute_volume"
-  "!XF86AudioMicMute": "$mute_mic"
+  "!XF86AudioRaiseVolume": "${raise_volume}"
+  "!XF86AudioLowerVolume": "${lower_volume}"
+  "!XF86AudioMute": "${mute_volume}"
+  "!XF86AudioMicMute": "${mute_mic}"
   MC:j: resize shrink height 10 px or 10 ppt
   MC:k: resize grow height 10 px or 10 ppt
   MC:h: resize shrink width 10 px or 10 ppt
   MC:l: resize grow width 10 px or 10 ppt
   MS:q: kill
-  "!M:p": dmenu_run  -b -l 10 -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf
-    '#002b36 '
+  "!M:p": dmenu_run -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf '#002b36' -b -l 15
   MS:h: move left
   MS:j: move down
   MS:k: move up
@@ -94,31 +94,30 @@ keybindings:
   MS:e: floating toggle
   M:space: focus mode_toggle
   M:a: focus parent
-  M:1: workspace number $ws1
-  MS:1: move container to workspace number $ws1
-  M:2: workspace number $ws2
-  MS:2: move container to workspace number $ws2
-  M:3: workspace number $ws3
-  MS:3: move container to workspace number $ws3
-  M:4: workspace number $ws4
-  MS:4: move container to workspace number $ws4
-  M:5: workspace number $ws5
-  MS:5: move container to workspace number $ws5
-  M:6: workspace number $ws6
-  MS:6: move container to workspace number $ws6
-  M:7: workspace number $ws7
-  MS:7: move container to workspace number $ws7
-  M:8: workspace number $ws8
-  MS:8: move container to workspace number $ws8
-  M:9: workspace number $ws9
-  MS:9: move container to workspace number $ws9
-  M:10: workspace number $ws10
-  MS:10: move container to workspace number $ws10
+  M:1: workspace number ${ws1}
+  MS:1: move container to workspace number ${ws1}
+  M:2: workspace number ${ws2}
+  MS:2: move container to workspace number ${ws2}
+  M:3: workspace number ${ws3}
+  MS:3: move container to workspace number ${ws3}
+  M:4: workspace number ${ws4}
+  MS:4: move container to workspace number ${ws4}
+  M:5: workspace number ${ws5}
+  MS:5: move container to workspace number ${ws5}
+  M:6: workspace number ${ws6}
+  MS:6: move container to workspace number ${ws6}
+  M:7: workspace number ${ws7}
+  MS:7: move container to workspace number ${ws7}
+  M:8: workspace number ${ws8}
+  MS:8: move container to workspace number ${ws8}
+  M:9: workspace number ${ws9}
+  MS:9: move container to workspace number ${ws9}
+  M:0: workspace number ${ws10}
+  MS:0: move container to workspace number ${ws10}
   MS:c: reload
   MS:r: restart
   M:r: mode "resize"
 autostart:
-- setxkbmap -option caps:swapescape
 - dex -ae i3 -s ~/.config/autostart
 colors:
   client.focused:
