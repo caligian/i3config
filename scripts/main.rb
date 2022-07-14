@@ -16,7 +16,8 @@ class Main
     s = YAML.dump(Presets::DEFAULTS[type])
     dir = File.join(@presets_dir, type)
     Dir.mkdir(dir) unless Dir.exist?(dir)
-    File.write(File.join(dir, name + '.yaml'), s)
+    path = File.join(dir, name)
+    File.write(path, s)
   end
 
   def new_preset(type, name)
@@ -25,8 +26,8 @@ class Main
     editor = editor || 'nvim'
     preset.write(name, {})
     name = preset.presets_written[-1]
-    write_sample_preset type
-    set_preset type name
+    write_sample_preset type, name
+    set_preset type, name
   end
 
   def write_preset(type, name, conf)
@@ -67,7 +68,6 @@ class Main
   end
 end
 
-m = Main.new
-m.write_sample_preset 'colors', 'solarized'
-m.set_preset 'colors', 'solarized'
-puts m.get_config save: false
+# Use this in an REPL and manage your presets
+themer = Main.new
+themer.new_preset 'colors', 'gruvbox'

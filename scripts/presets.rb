@@ -13,7 +13,7 @@ class Presets
         next if name == 'vars'
         cls =  Class.new(super_class=Presets)
         cls.const_set :CONFIG_PATH, CONFIG_DIR
-        cls.const_set :DEFAULTS, defaults
+        cls.instance_variable_set "@#{name}", defaults
         classes[name] = cls.new name
       }
       classes
@@ -23,13 +23,14 @@ class Presets
   def initialize(name)
     @dir = File.join(CONFIG_DIR, 'presets', name)
     !Dir.exist?(@dir) && `mkdir -p #{@dir}`
+    @defaults = DEFAULTS
     @presets = Dir.children(@dir).map {|f| File.join(@dir, f)}
     @presets_written = []
   end
 
   def write(name, conf)
     @presets_written << "#{name}.yaml"
-    File.write(File.join(@dir, @presets_written[-1]), YAML.dump(conf.merge(DEFAULTS)))
+    File.write(File.join(@dir, @presets_written[-1]), YAML.dump(conf.merge(@defaults)))
   end
 
   def get(pattern)
