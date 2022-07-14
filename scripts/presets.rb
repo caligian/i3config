@@ -4,24 +4,36 @@ class Presets
   CONFIG_DIR = File.join(ENV['HOME'], '.config', 'i3')
   DEFAULTS = YAML.load(File.read('defaults.yaml'))
 
-  attr_reader :dir, :default, :presets
+  attr_reader :dir, :defaults, :presets, :presets_written
 
-  def initialize(name, default)
-    @dir = File.join(CONFIG_DIR, name)
+  class << self
+    def get_classes
+      classes = {}
+      Presets::DEFAULTS.each {|name, defaults|
+        next if name == 'vars'
+        cls =  Class.new(super_class=Presets)
+        cls.const_set :CONFIG_PATH, CONFIG_DIR
+        cls.const_set :DEFAULTS, defaults
+        classes[name] = cls.new name
+      }
+      classes
+    end
+  end
+
+  def initialize(name)
+    @dir = File.join(CONFIG_DIR, 'presets', name)
     !Dir.exist?(@dir) && `mkdir -p #{@dir}`
-    @default = default
+    @presets = Dir.children(@dir).map {|f| File.join(@dir, f)}
+    @presets_written = []
   end
 
   def write(name, conf)
-    File.write(File.join(@dir, name + '.yaml'), YAML.dump(conf.merge(@default)))
-  end
-
-  def load
-    @presets = Dir.children(@dir).map {|f| File.join(@dir, f)}
+    @presets_written << "#{name}.yaml"
+    File.write(File.join(@dir, @presets_written[-1]), YAML.dump(conf.merge(DEFAULTS)))
   end
 
   def get(pattern)
-    @presets.filter {|f| f =~ /ya?ml$/ and f =~ pattern }
+    @presets.filter {|f| f =~ /yaml$/ and f =~ pattern }
   end
 
   def read(pattern)
@@ -76,7 +88,3 @@ class Presets
     end
   end
 end
-
-p = Presets.new('global', Presets::DEFAULTS)
-p.load
-p.menu(rofi: true, read: true)

@@ -11,7 +11,7 @@ module Parser
   # !{sh command}
   def expand_vars(s)
     s = s.to_s
-    vars = s.scan(/[$#%!][{]?[^}]+}?/).flatten
+    vars = s.scan(/[$#%!][{][^}]+[}]/).flatten
     vars.each {|var| 
       varname = var[2...var.length-1]
 
@@ -192,18 +192,18 @@ module Parser
     }
   end
 
-  def save(includes: [], modes: {}, keybindings: {}, options: {}, colors: {}, bar: {}, autostart: [])
+  def compile(includes: [], modes: {}, keybindings: {}, options: {}, colors: {}, bar: {}, autostart: [], vars: {})
     s = []
-    s.push parse_vars
+    #s.push parse_vars
     s.push parse_keybindings(keybindings)
     s.push parse_autostart(autostart)
     s.push parse_options(options)
     s.push parse_colors(colors)
     s.push parse_bar(bar)
+    s = s.join "\n"
     dest = File.join(CONFIG_DIR, 'config')
-    File.write(dest, s.join("\n"))
+    File.write(dest, s)
+
+    s
   end
 end
-
-include Parser
-puts expand_vars("!{ls -l}")
