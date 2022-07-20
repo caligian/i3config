@@ -1,20 +1,20 @@
-client.focused #002b36 #002b36 #b58900 #268bd2 #b58900
-client.focused_inactive #073642 #073642 #93a1a1 #073642 #073642
-client.unfocused #073642 #073642 #657b83 #073642 #073642
-client.urgent #d33682 #d33682 #002b36 #d33682 #d33682
-client.background #002b36
+client.focused #282828 #282828 #d3869b #1d2021 #fb4934
+client.focused_inactive #282828 #282828 #928374 #504975 #504945
+client.unfocused #3c3836 #3c3836 #d65d8e #073642 #073642
+client.urgent #d33682 #d33682 #282828 #d33682 #d33682
+client.background #282828
 bar {
     status_command i3status --config ~/.config/i3/status_config
     position bottom
     output primary
-    font pango:sans 12
+    font pango:NotoSansMono Nerd Font Medium 13
     separator_symbol 
     workspace_min_width 1
     colors {
-        background #002b36
-        statusline #839496
-        separator #839496
-        focused_workspace #839496 #002b36 #839496
+        background #282828
+        statusline #fe8019
+        separator #458588
+        focused_workspace #98971a #282828 #98971a
         active_workspace #839496 #839496 #002b36
         inactive_workspace #073642 #073642 #839496
         urgent_workspace #dc322f #dc322f #93a1a1
@@ -77,6 +77,7 @@ bindsym Mod4+Shift+c reload
 bindsym Mod4+Shift+r restart
 bindsym Mod4+r mode "resize"
 exec --no-startup-id dex -ae i3 -s ~/.config/autostart
+exec --no-startup-id dex -ae i3 -s ~/.config/autostart
 focus_follows_mouse no
 mouse_warping output
 focus_wrapping yes
@@ -88,4 +89,4 @@ default_border pixel 4
 default_floating_border pixel 4
 hide_edge_borders smart
 floating_modifier Mod4
-font pango:Liberation Sans 13
+font pango:Noto Sans 13

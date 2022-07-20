@@ -8,12 +8,13 @@ class Preset
   attr_reader :dir, :defaults, :presets, :presets_written, :type, :current_path, :parser
 
   def initialize(type)
+    type = type.to_s
     @dir = File.join(CONFIG_DIR, 'presets', type)
     @type = type
     @presets_written = []
-    @defaults = DEFAULTS[type]
+    @defaults = DEFAULTS[@type]
     @parser = Parser.new DEFAULTS
-    @current_path = File.join(@dir, 'current')
+    @current_path = File.join(@dir, 'current_preset')
 
     `mkdir -p #{@dir}` unless Dir.exist?(@dir)
   end
@@ -57,9 +58,9 @@ class Preset
 
   def read_current
     return unless File.exist? @current_path
-    path = File.join(@dir, get_current + ".yaml")
-    return unless File.exist? path
-    YAML.load(File.read(path))
+    path = "#{File.read(@current_path).chomp}.yaml"
+    path = File.join(@dir, path)
+    YAML.load_file(path)
   end
 
   def delete(pattern)
@@ -113,10 +114,11 @@ class Preset
       conf = {}
       ks = ['colors', 'bar', 'autostart', 'options', 'keybindings']
       p = false
-      ks.each {|type, defaults|
+      ks.each {|type|
         p = Preset.new type
         current_preset = false
-        current = defaults
+        default = Preset::DEFAULTS[type]
+        current = default
 
         if File.exist?(p.current_path)
           current = p.read_current

@@ -1,0 +1,34 @@
+---
+status_command: i3status --config ~/.config/i3/status_config
+position: bottom
+output: primary
+font: pango:NotoSansMono Nerd Font Medium 13
+separator_symbol: ""
+workspace_min_width: '1'
+colors:
+  background:
+  - "#282828"
+  statusline:
+  - "#fe8019"
+  separator:
+  - "#458588"
+  focused_workspace:
+  - "#98971a"
+  - "#282828"
+  - "#98971a"
+  active_workspace:
+  - "#839496"
+  - "#839496"
+  - "#002b36"
+  inactive_workspace:
+  - "#073642"
+  - "#073642"
+  - "#839496"
+  urgent_workspace:
+  - "#dc322f"
+  - "#dc322f"
+  - "#93a1a1"
+  binding_mode:
+  - "#b58900"
+  - "#b58900"
+  - "#002b36"
