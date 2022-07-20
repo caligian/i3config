@@ -1,31 +1,30 @@
 require 'yaml'
 
-class Presets
+class Preset
+  require_relative 'parser'
+
   CONFIG_DIR = File.join(ENV['HOME'], '.config', 'i3')
-  DEFAULTS = YAML.load(File.read('defaults.yaml'))
+  DEFAULTS = YAML.load_file('defaults.yaml')
+  attr_reader :dir, :defaults, :presets, :presets_written, :type, :current_path, :parser
 
-  attr_reader :dir, :defaults, :presets, :presets_written
+  def initialize(type)
+    @dir = File.join(CONFIG_DIR, 'presets', type)
+    @type = type
+    @presets_written = []
+    @defaults = DEFAULTS[type]
+    @parser = Parser.new DEFAULTS
+    @current_path = File.join(@dir, 'current')
 
-  class << self
-    def get_classes
-      classes = {}
-      Presets::DEFAULTS.each {|name, defaults|
-        next if name == 'vars'
-        cls =  Class.new(super_class=Presets)
-        cls.const_set :CONFIG_PATH, CONFIG_DIR
-        cls.instance_variable_set "@#{name}", defaults
-        classes[name] = cls.new name
-      }
-      classes
-    end
+    `mkdir -p #{@dir}` unless Dir.exist?(@dir)
   end
 
-  def initialize(name)
-    @dir = File.join(CONFIG_DIR, 'presets', name)
-    !Dir.exist?(@dir) && `mkdir -p #{@dir}`
-    @defaults = DEFAULTS
+  def get_presets
     @presets = Dir.children(@dir).map {|f| File.join(@dir, f)}
-    @presets_written = []
+    blank?(@presets) ? false : @presets
+  end
+
+  def set(name)
+    File.write(@current_path, name)
   end
 
   def write(name, conf)
@@ -33,14 +32,34 @@ class Presets
     File.write(File.join(@dir, @presets_written[-1]), YAML.dump(conf.merge(@defaults)))
   end
 
-  def get(pattern)
-    @presets.filter {|f| f =~ /yaml$/ and f =~ pattern }
+  def get(pattern, read: false)
+    p = {}
+
+    @presets.each {|f| 
+      path = File.join(@dir, f)
+      next unless (f =~ /yaml$/ and f =~ pattern and File.exist? path)
+      p[File.basename f] = read ? YAML.load_file(path) : path
+    }
+
+    p
   end
 
-  def read(pattern)
-    s = {}
-    get(pattern).each {|f| s[f] = YAML.load(File.read(f)) }
-    s
+  def read(name)
+    path = File.join(@dir, "#{name}.yaml")
+    return unless File.exist? path
+    YAML.load_file(path) 
+  end
+
+  def get_current
+    return unless File.exist? @current_path
+    File.read(@current_path)
+  end
+
+  def read_current
+    return unless File.exist? @current_path
+    path = File.join(@dir, get_current + ".yaml")
+    return unless File.exist? path
+    YAML.load(File.read(path))
   end
 
   def delete(pattern)
@@ -88,4 +107,27 @@ class Presets
       input = input == '' ? false : read ? YAML.load(File.read(@presets[basename.index input])) : @presets[basename.index(input)]
     end
   end
+
+  class << self
+    def compile(save: true)
+      conf = {}
+      ks = ['colors', 'bar', 'autostart', 'options', 'keybindings']
+      p = false
+      ks.each {|type, defaults|
+        p = Preset.new type
+        current_preset = false
+        current = defaults
+
+        if File.exist?(p.current_path)
+          current = p.read_current
+        end
+
+        conf[type.to_sym] = current
+      }
+
+      p.parser.compile(**conf, save: save)
+    end
+  end
 end
+
+Preset.compile

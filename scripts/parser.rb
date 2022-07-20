@@ -1,9 +1,55 @@
-require 'yaml'
+class Parser
+  require 'yaml'
 
-module Parser
-  DEFAULTS = YAML.load(File.read('defaults.yaml'))
-  VARS = DEFAULTS['vars']
   CONFIG_DIR = File.join(ENV['HOME'], '.config', 'i3')
+
+  def initialize(defaults)
+    @defaults = defaults
+    @vars = @defaults['vars']
+  end
+
+  def mkconf(key, config)
+    _mkarr = ->(k, conf) {
+      default = @defaults[k]
+      if v.length < default.length 
+        v = v + default.slice(v.length, default_v.length)
+      end
+
+      v.map! {|c| 
+        c.strip!
+        check_color c
+        c !~ /^#/ ? '#' + c : c 
+      }
+    }
+    _mkconf = ->(k, conf) {
+      default = @defaults[k]
+      default.each do |k, value|
+        if !conf.has_key? k
+          conf[k] = value
+        elsif default.is_a? Array
+          conf[k] = _mkarr.call(k, conf[k])
+        end
+      end
+    }
+
+    if key == 'global'
+      @defaults.each {|k, v| _mkconf.call k, config[k]}
+    elsif config.is_a? Hash
+      _mkconf.call key, config
+    elsif config.is_a? Array
+      _mkarr.call key, config
+    elsif !config
+      if @defaults[key].is_a? Array
+        config = _mkarr.call key, []
+      elsif @defaults[key].is_a? Hash
+        config = _mkconf.call key, {}
+      else
+        config = @defaults[key]
+      end
+    end
+
+    config
+  end
 
   # #{ruby expression}
   # ${variable}
@@ -22,7 +68,7 @@ module Parser
       elsif var[0] == '%'
         s = s.gsub(var, ENV[varname] || '')
       elsif var[0] == '$'
-        s = s.gsub(var, VARS[varname] || '')
+        s = s.gsub(var, @vars[varname] || '')
       end
     }
     s
@@ -32,58 +78,67 @@ module Parser
     c !~ /^#?[0-9a-fA-F]{6}/ and raise "Invalid hex: #{c}"
   end
 
-  def parse(conf, s:[], d:0, default: {})
-    spaces = d > 0 ? '    ' * d : ''
+  def check_color_arr(arr)
+    arr.each {|c| check_color c}
+  end
 
-    default.merge(conf).each { |k,v| 
-      default_v = default[k]
-      v = conf[k] || default_v
+  def parse(key, conf=false, depth: 0, &block)
+    _get_arr_s = lambda {}
+    _get_s = lambda {}
+    _get_hash_s = lambda {}
 
-      if block_given?
-        k, v = yield [k, v]
-      end
-
-      if v.is_a? Hash
-        s.push "#{spaces}#{k} {"
-        parse(v, s: s, d:d+1, default: v)
-        s.push "#{spaces}}"
-      else
-        # Special case for checking number arrays
-        if v.is_a? Array
-          v = v + (default_v.slice(v.length, default_v.length) || [])
-          v = v.map {|c| 
-            c.strip!
-            check_color c
-            c !~ /^#/ ? '#' + c : c 
-          }
-          s.push "#{spaces}#{k} #{v.join ' '}" 
-        else
-          v = expand_vars v
-          s.push "#{spaces}#{k} #{v}"
-        end
-      end
+    
+    _get_arr_s = ->(key, arr) { 
+      check_color_arr arr
+      key + " " + arr.join(" ") 
     }
 
-    s
+    _get_s = ->(key, value) {
+      value = value || @defaults[key]
+      value.is_a?(Array) ? _get_arr_s.call(key, value) : "#{key} #{value}"
+    }
+
+    _get_hash_s = ->(key, h, depth: 0, str: []) {
+      spaces = depth > 0 ? '    ' * depth : ''
+      h.each { |k, v|
+        if block; k, v = block.call(k, v); end
+
+        if v.is_a? Hash
+          str.push "#{spaces}#{k} {"
+          _get_hash_s.call(key, v, depth: depth+1, str: str)
+          str.push "#{spaces}}"
+        else
+          str.push spaces + _get_s.call(k, v)
+        end
+      }
+      str.join "\n"
+    }
+
+    conf = mkconf(key, conf)
+    if conf.is_a? Hash
+      _get_hash_s.call key, conf, depth: depth
+    else
+      _get_s.call key, conf
+    end
   end
 
   def parse_options(opts)
-    parse(opts, default: DEFAULTS['options']).join "\n"
+    parse('options', opts)
   end
 
   def parse_autostart(cmds)
-    (DEFAULTS['autostart'] + cmds).map {|c| 'exec --no-startup-id ' + expand_vars(c)}.join "\n"
+    cmds = cmds || []
+    (@defaults['autostart'] + cmds).map {|c| 'exec --no-startup-id ' + expand_vars(c)}.join "\n"
   end
 
   def parse_bar(conf)
-    s = parse(conf, d:1, default: DEFAULTS['bar'])
-    s[0] = "bar {\n#{s[0]}"
+    s = ["bar {", parse('bar', conf || false, depth: 1)]
     s.push "\n}"
     s.join "\n"
   end
 
   def parse_colors(conf)
-    parse(conf, default: DEFAULTS['colors'])
+    parse('colors', conf)
   end
 
   def parse_keybindings(conf)
@@ -94,7 +149,8 @@ module Parser
     # spec: {Modifier}:{keys}
     s = []
 
-    DEFAULTS['keybindings'].merge(conf).each do |keys, cmd|
+    conf = mkconf('keybindings', conf)
+    conf.each do |keys, cmd|
       keys = keys.strip
       mod = ''
       ks = ''
@@ -141,7 +197,7 @@ module Parser
     binding_modes = []
     desc = {}
 
-    DEFAULTS['modes'].merge(conf).each do |mode, cmd|
+    mkconf('modes', conf).each do |mode, cmd|
       str = [false]
       mode_s = desc[mode] || []
       s = []
@@ -180,29 +236,31 @@ module Parser
     binding_modes.join "\n"
   end
 
-  def parse_includes(paths)
-    (paths + DEFAULTS['includes']).map {|p| 
+  def parse_includes(paths={})
+    (paths + @defaults['includes']).map {|p| 
       "include " + File.join(CONFIG_DIR, 'i3', p + '.conf')
     }.join "\n"
   end
  
-  def parse_vars
-    parse({}, default: VARS) { |k, v|
+  def parse_vars(vars={})
+    parse('vars', vars) { |k, v|
       "set $#{k} #{v}"
     }
   end
 
-  def compile(includes: [], modes: {}, keybindings: {}, options: {}, colors: {}, bar: {}, autostart: [], vars: {})
+  def compile(colors: {}, bar: {}, keybindings: {}, autostart: [], options: {}, save: false)
     s = []
-    #s.push parse_vars
+    s.push parse_colors(colors)
+    s.push parse_bar(bar)
     s.push parse_keybindings(keybindings)
     s.push parse_autostart(autostart)
     s.push parse_options(options)
-    s.push parse_colors(colors)
-    s.push parse_bar(bar)
     s = s.join "\n"
-    dest = File.join(CONFIG_DIR, 'config')
-    File.write(dest, s)
+
+    if save
+      dest = File.join(CONFIG_DIR, 'config')
+      File.write(dest, s)
+    end
 
     s
   end

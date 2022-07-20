@@ -45,7 +45,7 @@ options:
   default_floating_border: pixel 4
   hide_edge_borders: smart
   floating_modifier: "Mod4"
-  font: pango:Noto Sans 13
+  font: pango:Liberation Sans 13
 vars:
   raise_volume: pactl set-sink-volume @DEFAULT_SINK@ +10% && killall -SIGUSR1 i3status
   lower_volume: pactl set-sink-volume @DEFAULT_SINK@ -10% && killall -SIGUSR1 i3status
