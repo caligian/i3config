@@ -7,7 +7,7 @@ bar {
     status_command i3status --config ~/.config/i3/status_config
     position bottom
     output primary
-    font pango:NotoSansMono Nerd Font Medium 13
+    font pango:Sans 12
     separator_symbol 
     workspace_min_width 1
     colors {
@@ -16,13 +16,14 @@ bar {
         separator #458588
         focused_workspace #98971a #282828 #98971a
         active_workspace #839496 #839496 #002b36
-        inactive_workspace #073642 #073642 #839496
+        inactive_workspace #282828 #282828 #839496
         urgent_workspace #dc322f #dc322f #93a1a1
-        binding_mode #b58900 #b58900 #002b36
+        binding_mode #b8bb26 #b8bb26 #002b36
     }
 
 }
-bindsym Mod4+Return exec --no-startup-id xfce4-terminal
+bindsym Mod4+Return exec --no-startup-id i3-sensible-terminal
+bindsym Mod4+Shift+Return exec --no-startup-id i3-sensible-terminal -e 'zsh -c nvim'
 bindsym Mod4+Control+f exec --no-startup-id firefox
 bindsym Mod4+Control+Return exec --no-startup-id nvim-qt
 bindsym XF86AudioRaiseVolume exec --no-startup-id pactl set-sink-volume @DEFAULT_SINK@ +10% && killall -SIGUSR1 i3status
@@ -34,7 +35,8 @@ bindsym Mod4+Control+k resize grow height 10 px or 10 ppt
 bindsym Mod4+Control+h resize shrink width 10 px or 10 ppt
 bindsym Mod4+Control+l resize grow width 10 px or 10 ppt
 bindsym Mod4+Shift+q kill
-bindsym Mod4+p exec --no-startup-id dmenu_run -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf '#002b36' -b -l 15
+bindsym Mod4+p exec --no-startup-id rofi -show run
+bindsym Mod4+semicolon exec --no-startup-id rofi -show window
 bindsym Mod4+Shift+h move left
 bindsym Mod4+Shift+j move down
 bindsym Mod4+Shift+k move up
@@ -76,7 +78,6 @@ bindsym Mod4+Shift+0 move container to workspace number 10
 bindsym Mod4+Shift+c reload
 bindsym Mod4+Shift+r restart
 bindsym Mod4+r mode "resize"
-exec --no-startup-id dex -ae i3 -s ~/.config/autostart
 exec --no-startup-id dex -ae i3 -s ~/.config/autostart
 focus_follows_mouse no
 mouse_warping output

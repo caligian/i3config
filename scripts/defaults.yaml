@@ -63,7 +63,8 @@ vars:
   ws9: '9'
   ws10: '10'
 keybindings:
-  "!M:Return": xfce4-terminal
+  "!M:Return": i3-sensible-terminal
+  "!MS:Return": i3-sensible-terminal -e 'zsh -c nvim'
   "!MC:f": firefox
   "!MC:Return": nvim-qt
   "!XF86AudioRaiseVolume": "${raise_volume}"
@@ -75,7 +76,8 @@ keybindings:
   MC:h: resize shrink width 10 px or 10 ppt
   MC:l: resize grow width 10 px or 10 ppt
   MS:q: kill
-  "!M:p": dmenu_run -fn 'Liberation Sans' -nb '#002b36' -sb '#b58900' -sf '#002b36' -b -l 15
+  "!M:p": rofi -show run
+  "!M:semicolon": rofi -show window
   MS:h: move left
   MS:j: move down
   MS:k: move up

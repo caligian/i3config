@@ -128,7 +128,7 @@ class Parser
 
   def parse_autostart(cmds)
     cmds = cmds || []
-    (@defaults['autostart'] + cmds).map {|c| 'exec --no-startup-id ' + expand_vars(c)}.join "\n"
+    (@defaults['autostart'] | cmds).map {|c| 'exec --no-startup-id ' + expand_vars(c)}.join "\n"
   end
 
   def parse_bar(conf)
