@@ -33,6 +33,10 @@ class Preset
     File.write(File.join(@dir, @presets_written[-1]), YAML.dump(conf.merge(@defaults)))
   end
 
+  def write_sample(name)
+    write(name, @defaults)
+  end
+
   def get(pattern, read: false)
     p = {}
 
@@ -131,5 +135,3 @@ class Preset
     end
   end
 end
-
-Preset.compile

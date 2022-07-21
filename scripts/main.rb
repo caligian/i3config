@@ -1,5 +1,6 @@
 require_relative 'presets'
 require_relative 'parser'
+require 'optparse'
 require 'yaml'
 
 class Main
