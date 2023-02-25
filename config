@@ -1,0 +1,8 @@
+include ~/.config/i3/bar.i3
+include ~/.config/i3/exec.i3
+include ~/.config/i3/font.i3
+include ~/.config/i3/kbd.i3
+include ~/.config/i3/mode.i3
+include ~/.config/i3/theme.i3
+include ~/.config/i3/rule.i3
+include ~/.config/i3/option.i3
