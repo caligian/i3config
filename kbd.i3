@@ -5,6 +5,12 @@ bindsym XF86AudioLowerVolume exec --no-startup-id pactl set-sink-volume @DEFAULT
 bindsym XF86AudioMute exec --no-startup-id pactl set-sink-mute @DEFAULT_SINK@ toggle && $refresh_i3status
 bindsym XF86AudioMicMute exec --no-startup-id pactl set-source-mute @DEFAULT_SOURCE@ toggle && $refresh_i3status
 
+# Set brightness
+bindsym XF86MonBrightnessDown exec --no-startup-id light -U 5
+bindsym XF86MonBrightnessUp exec --no-startup-id light -A 5
+bindsym Mod4+minus exec --no-startup-id light -U 5
+bindsym Mod4+equal exec --no-startup-id light -A 5
+
 # Terminal and neovim
 bindsym Mod4+Return exec kitty
 bindsym Mod4+Shift+Return exec kitty -e nvim
@@ -13,8 +19,8 @@ bindsym Mod4+Shift+Return exec kitty -e nvim
 bindsym Mod4+Shift+q kill
 
 # Menu
-bindsym Mod4+p exec --no-startup-id rofi -show run
-bindsym Mod4+semicolon exec --no-startup-id rofi -show window
+bindsym Mod4+p exec --no-startup-id rofi -show run -theme solarized -font 'Mono 15'
+bindsym Mod4+semicolon exec --no-startup-id rofi -show window -font 'Mono 15' -theme solarized
 
 # Focus windows
 bindsym Mod4+h focus left
