@@ -5,9 +5,8 @@ bar {
   strip_workspace_numbers no
   workspace_min_width 20
   workspace_buttons yes
-  font pango: sans 11
-  font -xos4-terminus-bold-*-*-*-*-140-*-*-*-*-*-*
-
+  font pango: sans 13
+#  font -xos4-terminus-bold-*-*-*-*-140-*-*-*-*-*-*
   colors {
     background #002b36
     statusline #abbcbc
